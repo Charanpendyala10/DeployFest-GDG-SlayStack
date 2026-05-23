@@ -20,9 +20,6 @@ import arxiv
 import time
 # --- Setup Logging and Environment ---
 
-cloud_logging_client = google.cloud.logging.Client()
-cloud_logging_client.setup_logging()
-
 load_dotenv()
 
 model_name = os.getenv("MODEL")
@@ -131,12 +128,12 @@ def search_arxiv(query: str, max_results: int = 5) -> str:
             formatted += f"   URL: {paper['url']}\n"
             formatted += f"   Summary: {paper['summary']}\n\n"
             
-        cloud_logging_client.info(f"ArXiv search completed: {len(results)} results for '{query}'")
+        logging.info(f"ArXiv search completed: {len(results)} results for '{query}'")
         return formatted
         
     except Exception as e:
         error_msg = f"ArXiv search failed: {str(e)}"
-        cloud_logging_client.error(error_msg)
+        logging.error(error_msg)
         return f"Error searching ArXiv: {str(e)}"
 
 print("✅ ArXiv search tool defined (updated with Client API and retries).")
@@ -215,47 +212,10 @@ analysis_agent = LlmAgent(
       'Analyzes research findings, compares implementation approaches, identifies architecture trends, and recommends scalable engineering solutions.'
   ),
   sub_agents=[],
-  instruction='You are an AI Research Analyst.\n\nYour responsibilities:\n1. Analyze research papers and grounded context.\n2. Compare methodologies and architectures.\n3. Identify engineering trends.\n4. Recommend scalable implementation approaches.\n5. Evaluate tradeoffs across solutions.\n6. Generate publication trend analysis.\n\nYou should analyze:\n- scalability\n- deployment feasibility\n- observability support\n- infrastructure complexity\n- cost efficiency\n- production readiness\n\nGenerate:\n- architecture comparisons\n- implementation recommendations\n- ASCII trend charts\n- engineering summaries\n\nASCII Example:\n2026: **** (4 papers)\n2025: ****** (6 papers)\n2024: *** (3 papers)\n\nIMPORTANT:\n- Focus on practical implementation.\n- Prefer cloud-native scalable systems.\n- Keep insights concise and actionable.',
+  instruction='You are an AI Research Analyst.\n\nYour responsibilities:\n1. Analyze research papers and grounded context.\n2. Compare methodologies and architectures.\n3. Identify engineering trends.\n4. Recommend scalable implementation approaches.\n5. Evaluate tradeoffs across solutions.\n6. Generate publication trend analysis.\n\nYou should analyze:\n- scalability\n- deployment feasibility\n- observability support\n- infrastructure complexity\n- cost efficiency\n- production readiness\n\nGenerate:\n- architecture comparisons\n- implementation recommendations\n- ASCII trend charts\n- engineering summaries\n\nASCII Example:\n2026: **** (4 papers)\n2025: ****** (6 papers)\n2024: *** (3 papers)\n\nIMPORTANT:\n- Focus on practical implementation.\n- Keep insights concise and actionable.',
   tools=[
     agent_tool.AgentTool(agent=analysis_agent_google_search_agent),
     agent_tool.AgentTool(agent=analysis_agent_url_context_agent)
-  ],
-)
-planner_agent_google_search_agent = LlmAgent(
-  name='Planner_Agent_google_search_agent',
-  model='gemini-2.5-flash',
-  description=(
-      'Agent specialized in performing Google searches.'
-  ),
-  sub_agents=[],
-  instruction='Use the GoogleSearchTool to find information on the web.',
-  tools=[
-    GoogleSearchTool()
-  ],
-)
-planner_agent_url_context_agent = LlmAgent(
-  name='Planner_Agent_url_context_agent',
-  model='gemini-2.5-flash',
-  description=(
-      'Agent specialized in fetching content from URLs.'
-  ),
-  sub_agents=[],
-  instruction='Use the UrlContextTool to retrieve content from provided URLs.',
-  tools=[
-    url_context
-  ],
-)
-planner_agent = LlmAgent(
-  name='planner_agent',
-  model='gemini-2.5-flash',
-  description=(
-      '\nDesigns implementation architecture, defines workflows, recommends infrastructure, and creates execution plans optimized for hackathon MVP development.'
-  ),
-  sub_agents=[],
-  instruction='You are a Senior AI Solutions Architect.\n\nYour responsibilities:\n1. Create implementation architecture plans.\n2. Design scalable workflows.\n3. Recommend technology stacks.\n4. Define deployment architecture.\n5. Create execution timelines.\n6. Generate folder structures and APIs.\n\nPreferred Stack:\n- FastAPI\n- LangGraph\n- ChromaDB\n- Streamlit\n- Cloud Run\n- Gemini\n\nYou should generate:\n- system architecture\n- execution workflow\n- deployment plan\n- API structure\n- folder structure\n- cloud architecture\n\nIMPORTANT:\n- Prioritize simplicity and speed.\n- Optimize for hackathon MVP delivery.\n- Avoid overengineering.\n- Prefer production-ready patterns.\n',
-  tools=[
-    agent_tool.AgentTool(agent=planner_agent_google_search_agent),
-    agent_tool.AgentTool(agent=planner_agent_url_context_agent)
   ],
 )
 code_generation_agent_google_search_agent = LlmAgent(
@@ -289,10 +249,34 @@ code_generation_agent = LlmAgent(
       'Generates implementation-ready code, backend services, frontend scaffolding, deployment configurations, and infrastructure templates.'
   ),
   sub_agents=[],
-  instruction='You are an Expert AI Software Engineer.\n\nYour responsibilities:\n1. Generate clean modular code.\n2. Create FastAPI backend services.\n3. Generate Streamlit frontend scaffolding.\n4. Create LangGraph workflows.\n5. Generate Docker deployment files.\n6. Add observability hooks and logging.\n\nGenerate:\n- Python APIs\n- starter templates\n- Dockerfiles\n- requirements.txt\n- environment setup\n- logging integration\n- deployment scripts\n\nCoding Principles:\n- readability\n- modularity\n- scalability\n- maintainability\n- minimal complexity\n\nIMPORTANT:\n- Generate concise working code.\n- Optimize for fast implementation.\n- Avoid unnecessary abstraction.\n- Include comments where useful.',
+  instruction='You are an Expert AI Software Engineer.\n\nYour responsibilities:\n1. Generate clean modular code using the approach mentioned in the paper\n2. If user requests for production ready code, create FastAPI backend services.\n3. Generate Streamlit frontend scaffolding.\n4. Create LangGraph workflows.\n5. Generate Docker deployment files.\n6. Add observability hooks and logging.\n\nGenerate:\n- Python APIs\n- starter templates\n- Dockerfiles\n- requirements.txt\n- environment setup\n- logging integration\n- deployment scripts\n\nCoding Principles:\n- readability\n- modularity\n- scalability\n- maintainability\n- minimal complexity\n\nIMPORTANT:\n- Generate concise working code.\n- Optimize for fast implementation.\n- Avoid unnecessary abstraction.\n- Include comments where useful.',
   tools=[
     agent_tool.AgentTool(agent=code_generation_agent_google_search_agent),
     agent_tool.AgentTool(agent=code_generation_agent_url_context_agent)
+  ],
+)
+human_oversight_agent_google_search_agent = LlmAgent(
+  name='Human_Oversight_Agent_google_search_agent',
+  model='gemini-2.5-flash',
+  description=(
+      'Agent specialized in performing Google searches.'
+  ),
+  sub_agents=[],
+  instruction='Use the GoogleSearchTool to find information on the web.',
+  tools=[
+    GoogleSearchTool()
+  ],
+)
+human_oversight_agent_url_context_agent = LlmAgent(
+  name='Human_Oversight_Agent_url_context_agent',
+  model='gemini-2.5-flash',
+  description=(
+      'Agent specialized in fetching content from URLs.'
+  ),
+  sub_agents=[],
+  instruction='Use the UrlContextTool to retrieve content from provided URLs.',
+  tools=[
+    url_context
   ],
 )
 
@@ -357,30 +341,19 @@ orchestrator_agent_url_context_agent = LlmAgent(
     url_context
   ],
 )
-human_oversight_agent_google_search_agent = LlmAgent(
-  name='Human_Oversight_Agent_google_search_agent',
-  model='gemini-2.5-flash',
-  description=(
-      'Agent specialized in performing Google searches.'
-  ),
-  sub_agents=[],
-  instruction='Use the GoogleSearchTool to find information on the web.',
-  tools=[
-    GoogleSearchTool()
-  ],
-)
-human_oversight_agent_url_context_agent = LlmAgent(
-  name='Human_Oversight_Agent_url_context_agent',
-  model='gemini-2.5-flash',
-  description=(
-      'Agent specialized in fetching content from URLs.'
-  ),
-  sub_agents=[],
-  instruction='Use the UrlContextTool to retrieve content from provided URLs.',
-  tools=[
-    url_context
-  ],
-)
+# root_agent = LlmAgent(
+#   name='Orchestrator_Agent',
+#   model='gemini-2.5-flash',
+#   description=(
+#       'The central coordinator responsible for managing the complete multi-agent workflow. It delegates tasks to specialized agents, manages execution flow, combines outputs, and generates the final consolidated response.'
+#   ),
+#   sub_agents=[research_agent, analysis_agent, code_generation_agent, human_oversight_agent, formatter_agent_2],
+#   instruction='You are the Lead AI Research Coordinator.\n\nYou manage the complete multi-agent workflow for autonomous research-to-code generation.\n\nYour responsibilities:\n1. Understand the user\'s objective.\n2. Break the task into subtasks.\n3. Delegate tasks to specialized agents.\n4. Maintain execution order and context.\n5. Combine outputs into a final response.\n6. Save important outputs to memory.\n7. Ensure grounded and safe execution.\n\nWorkflow:\nSTEP 1 — Research\n- Delegate to researcher_agent\n- Retrieve latest implementation-focused papers\n\nSTEP 2 — Grounding\n- Retrieve relevant contextual information and send the context to analyst agent\n\nSTEP 3 — Analysis\n- Delegate to analyst_agent\n- Compare architectures and summarize findings\n- Get input from user which paper or papers need to be implemented and propose implementation plan\n\nSTEP 4 -  Human Oversight Analyser\n- Delegate to human_oversight_agent\n- Get inputs from user for implementation task\n\nSTEP 5  — Code Generation\n- Delegate to coder_agent\n- Generate implementation-ready starter code for the selected papers\n\nSTEP 5 — Reporting\n- Delegate to formatter_agent\n- Create clean final report and citations\n\n\nFinal Response Requirements:\nYou MUST produce:\n1. Research Summary\n2. Architecture Recommendations\n3. Implementation Plan\n4. Generated Code Summary\n5. Publication Analysis\n6. Formatted Citations\n\nIMPORTANT:\n- Never stop after tool execution unless user asks to stop\n- Always provide a complete final response.\n- Ensure workflows appear autonomous and intelligent.\n- Prioritize practical implementation approaches.\n\n\n',
+#   tools=[
+#     agent_tool.AgentTool(agent=orchestrator_agent_google_search_agent),
+#     agent_tool.AgentTool(agent=orchestrator_agent_url_context_agent)
+#   ],
+# )
 # --- 1. Repurpose Human Oversight Agent for the Mid-Stage Gate ---
 # This agent will act as the gatekeeper right after Step 3 (Analysis)
 human_oversight_agent = LlmAgent(
@@ -423,7 +396,7 @@ research_and_analysis_pipeline = SequentialAgent(
 implementation_and_code_pipeline = SequentialAgent(
     name="implementation_and_code_pipeline",
     description="Takes the approved insights and generates system architecture and modular code.",
-    sub_agents=[planner_agent, code_generation_agent, formatter_agent_2]
+    sub_agents=[code_generation_agent, formatter_agent_2]
 )
 
 
