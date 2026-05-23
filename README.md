@@ -32,7 +32,8 @@ The platform completely re-imagines multi-agent orchestration by moving away fro
                │
                ▼
     [ Cloud Run Deployment ]
-    
+
+```
 🤖 Core Agent Ecosystem
 research_agent: Features an optimized arxiv client wrapper with built-in request pooling and an automatic 3-tier backoff retry policy to ingest implementation-focused literature without endpoint deprecation blocks.
 
