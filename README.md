@@ -7,31 +7,32 @@ An advanced, multi-agent academic-to-production research assistant built using t
 
 🏗️ System Architecture & Workflow
 The platform completely re-imagines multi-agent orchestration by moving away from unpredictable single-agent loops into an explicit, multi-phase state machine utilizing SequentialAgent execution tracks and strict Human-in-the-Loop (HITL) gates.
-
+```text
        [ User Objective ]
                │
                ▼
 ┌──────────────────────────────┐
 │ Phase 1: Research & Analysis │ (research_and_analysis_pipeline)
 │  ├─ research_agent           │ ───► Fetches grounded insights from ArXiv & Google
-│  ├─ analysis_agent           │ ───► Compiles architectural metrics & ASCII trend charts
+│  ├─ analysis_agent           │ ───► Compiles architectural trends & ASCII charts
 │  └─ human_oversight_agent    │ ───► Generates evaluation risk profile
 └──────────────┬───────────────┘
                │
                ▼
-     ⚠️ [HUMAN INTERRUPT GATE]  ◄─── System holds execution state for user approval
+   ⚠️ [HUMAN INTERRUPT GATE]   ◄─── System holds execution state for user approval
                │
-          (Proceed)
+           (Proceed)
                │
                ▼
 ┌──────────────────────────────┐
 │  Phase 2: Implementation     │ (implementation_and_code_pipeline)
-│  ├─ code_generation_agent    │ ───► Generates code implementation
+│  ├─ code_generation_agent    │ ───► Generates production FastAPI + Streamlit code
 │  └─ formatter_agent_2        │ ───► Compiles complete markdown report + APA citations
 └──────────────┬───────────────┘
                │
                ▼
     [ Cloud Run Deployment ]
+    
 🤖 Core Agent Ecosystem
 research_agent: Features an optimized arxiv client wrapper with built-in request pooling and an automatic 3-tier backoff retry policy to ingest implementation-focused literature without endpoint deprecation blocks.
 
